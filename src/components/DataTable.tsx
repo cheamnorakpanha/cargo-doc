@@ -487,6 +487,25 @@ export function DataTable({
     return columns;
   }, [columns, showSourceFile]);
 
+  // Persist pageSize per module in localStorage
+  const pageSizeKey = `cargodoc_pageSize_${moduleType}`;
+  const [pagination, setPagination] = useState(() => {
+    let pageSize = 10;
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(pageSizeKey);
+      if (saved) {
+        const parsed = Number(saved);
+        if ([10, 20, 55, 100].includes(parsed)) pageSize = parsed;
+      }
+    }
+    return { pageIndex: 0, pageSize };
+  });
+
+  const handlePageSizeChange = (size: number) => {
+    localStorage.setItem(pageSizeKey, String(size));
+    setPagination({ pageIndex: 0, pageSize: size });
+  };
+
   // Table setup
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -495,9 +514,11 @@ export function DataTable({
     state: {
       sorting,
       globalFilter,
+      pagination,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -740,8 +761,8 @@ export function DataTable({
           <div className="flex items-center gap-2">
             <span>Rows per page</span>
             <select
-              value={table.getState().pagination.pageSize}
-              onChange={(e) => table.setPageSize(Number(e.target.value))}
+              value={pagination.pageSize}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
               className="bg-card border border-border rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-primary"
             >
               {[10, 20, 55, 100].map((size) => (
